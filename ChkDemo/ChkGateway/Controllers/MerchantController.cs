@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace ChkGateway.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("[controller]/[action]")]
     public class MerchantController : ControllerBase
     {
         private readonly ILogger<MerchantController> _logger;
