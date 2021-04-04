@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace ChkGateway.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("[controller]/[action]")]
     public class PaymentController : ControllerBase
     {
         private readonly ILogger<PaymentController> _logger;
@@ -35,6 +35,7 @@ namespace ChkGateway.Controllers
                 return BadRequest(validationErrors);
             }
 
+            // TODO move to token based auth rather than per request
             if(await _merchantService.ValidateIDApiKey(paymentRequest.MerchantID, paymentRequest.APIKey) == false)
             {
                 return Unauthorized();
@@ -69,5 +70,21 @@ namespace ChkGateway.Controllers
                 TransactionID = guidOfTransaction
             });
 ;        }
+
+
+        // TODO when moving to token based auth, we can change to to a more restful GET approach, for now we submit APIKey as a loose form of security within the body
+        [HttpPost]
+        public async Task<ActionResult<Merch_GetPaymentResponse>> GetExistingPayment(Merch_GetPaymentRequest getPaymentRequest)
+        {
+            var payment = await _transactionService.GetTransaction(getPaymentRequest.PaymentID, getPaymentRequest.MerchantID, getPaymentRequest.APIKey);
+            if(payment == null)
+            {
+                return NotFound();
+            }
+            else
+            {
+                return Ok(payment);
+            }
+        }
     }
 }
