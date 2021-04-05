@@ -1,8 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
+using ChkGateway.AttributeFilters;
 using ChkSDK.BankProxy;
 using ChkSDK.DTOs;
 using ChkSDK.Services;
 using ChkSDK.Validators;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -27,18 +30,13 @@ namespace ChkGateway.Controllers
         }
 
         [HttpPost]
+        [AuthorizeMerchant]
         public async Task<ActionResult<Merch_NewPaymentResponse>> PostNewPayment(Merch_NewPaymentRequest paymentRequest)
         {
             var validationErrors = CardValidator.ValidateCardInfo(paymentRequest);
             if(validationErrors.Count >= 1)
             {
                 return BadRequest(validationErrors);
-            }
-
-            // TODO move to token based auth rather than per request
-            if(await _merchantService.ValidateIDApiKey(paymentRequest.MerchantID, paymentRequest.APIKey) == false)
-            {
-                return Unauthorized();
             }
 
             var guidOfTransaction = await _transactionService.CreateNewTransaction(paymentRequest);
@@ -61,6 +59,8 @@ namespace ChkGateway.Controllers
             };
 
             var bankProcessResult = await _bankServiceProxy.ProcessPayment(bankRequest);
+
+            // When bank has finished processing, update transaction state with bank result, also pair transaction with bank Transaction GUID
             await _transactionService.UpdateTransactionStatus(guidOfTransaction, bankProcessResult.TransactionState, bankProcessResult.Message, bankProcessResult.BankTransactionID);
 
             return Ok(new Merch_NewPaymentResponse()
@@ -72,11 +72,24 @@ namespace ChkGateway.Controllers
 ;        }
 
 
-        // TODO when moving to token based auth, we can change to to a more restful GET approach, for now we submit APIKey as a loose form of security within the body
+        // Note: I don't particularly want the Payment GUID to be in the URL, so I chose HttpPost's for all communications in this solution,
+        // rather than going 'restful' approach using Http Verbs etc.
+        [AuthorizeMerchant]
         [HttpPost]
         public async Task<ActionResult<Merch_GetPaymentResponse>> GetExistingPayment(Merch_GetPaymentRequest getPaymentRequest)
         {
-            var payment = await _transactionService.GetTransaction(getPaymentRequest.PaymentID, getPaymentRequest.MerchantID, getPaymentRequest.APIKey);
+            // Merchant ID should be set in the HttpContext as key 'MerchantID' this is set/controller by the JwtMiddleware that intercepts every request
+            var merchID = GetMerchantIDFromContext(HttpContext);
+
+            // Should that Merchant ID not be found, it is classed as unauthorized, logically impossible to get here, but belt and braces 
+            if(merchID == null || merchID == Guid.Empty)
+            {
+                return Unauthorized();
+            }
+
+            // The reason why we need to extract this merchantID from the context is because we need to validate the merchant has access to this particular requested payment ID
+            // This is so that ANY authenticated merchant cannot just get access to ANY payment ID
+            var payment = await _transactionService.GetTransaction(getPaymentRequest.PaymentID, merchID);
             if(payment == null)
             {
                 return NotFound();
@@ -85,6 +98,22 @@ namespace ChkGateway.Controllers
             {
                 return Ok(payment);
             }
+        }
+
+        private Guid GetMerchantIDFromContext(HttpContext httpContext)
+        {
+            try
+            {
+                if (httpContext.Items["MerchantID"] != null)
+                {
+                    return (Guid)httpContext.Items["MerchantID"];
+                }
+            }
+            catch
+            {
+                return Guid.Empty;
+            }
+            return Guid.Empty;
         }
     }
 }

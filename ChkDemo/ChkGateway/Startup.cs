@@ -7,6 +7,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using ChkSDK.BankProxy;
 using ChkSDK.Services;
+using ChkSDK.SettingsModel;
+using ChkGateway.Middleware;
 
 namespace ChkGateway
 {
@@ -27,6 +29,8 @@ namespace ChkGateway
             services.AddDbContext<ChkDbContext>(
                 options => options.UseSqlServer(Configuration.GetConnectionString("ChkConnection")));
 
+            services.Configure<JwtSettings>(options => Configuration.GetSection("JwtSettings").Bind(options));
+
             // This is where I inject the fake bank proxy, this line would be altered in real system
             services.AddScoped<IBankServiceProxy, FakeBankServiceProxy>();
             services.AddScoped<IMerchantService, MerchantService>();
@@ -45,6 +49,9 @@ namespace ChkGateway
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            // Custom JWT middleware that validates access to restricted methods
+            app.UseMiddleware<JwtMiddleware>();
 
             app.UseAuthorization();
 

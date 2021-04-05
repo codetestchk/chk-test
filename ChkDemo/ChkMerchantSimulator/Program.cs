@@ -12,6 +12,8 @@ namespace ChkMerchantSimulator
     /// <summary>
     /// Purpose of this application is to act like a merchant ( many merchants ), receiving orders, asking for orders etc. It simulates the Merchant side of things
     /// Console applicaiton which connects to the Gateway application API endpoint
+    /// Setups up merchants first
+    /// Then picks a random merchant to simulate an order from to the gateway
     /// </summary>
     class Program
     {
@@ -24,21 +26,15 @@ namespace ChkMerchantSimulator
             MerchantSimulatorSettings merchantSimulatorSettings = new MerchantSimulatorSettings();
             configuration.GetSection("MerchantSimulatorSettings").Bind(merchantSimulatorSettings);
 
-            Console.WriteLine("Type how many merchants you want to set up in the backend, press enter");
-            int numberOfMerchants = Convert.ToInt32(Console.ReadLine());
-
-            Console.WriteLine("Setting up merchants");
+            int numberOfMerchants = 5;
             NewMerchantInfo[] merchants = new NewMerchantInfo[numberOfMerchants];
-            for (int i = 0; i < numberOfMerchants; i++)
-            {
-                merchants[i] = GenerateNewMerchant(merchantSimulatorSettings.Gateway);
-            }
+            SetupMerchants(merchantSimulatorSettings, merchants);
 
             Random rnd = new Random();
 
             while (true)
             {
-                Console.WriteLine("press enter to do a post, type end to exit");
+                Console.WriteLine("Press enter to do a post, type 'end' to exit");
                 string input = Console.ReadLine();
                 if (input == "exit")
                 {
@@ -46,28 +42,38 @@ namespace ChkMerchantSimulator
                 }
 
                 var randomMerchant = merchants[rnd.Next(numberOfMerchants)];
-                Console.WriteLine($"using merchant ID {randomMerchant.ID}");
-
-                Console.WriteLine("doing post");
-                var postResult = PostRandomPayment(merchantSimulatorSettings, randomMerchant);
-                if(postResult.Success)
+                var bearerToken = GetBearerToken(merchantSimulatorSettings, randomMerchant);
+                var postResult = PostRandomPayment(merchantSimulatorSettings, randomMerchant, bearerToken);
+                if (postResult.Success)
                 {
-                    Console.WriteLine($"Getting existing transaction {postResult.TransactionID}");
-                    var result = GetTransaction(merchantSimulatorSettings, postResult.TransactionID, randomMerchant);
+                    Console.WriteLine($"Getting existing Payment {postResult.TransactionID}");
+                    var result = GetTransaction(merchantSimulatorSettings, postResult.TransactionID, randomMerchant, bearerToken);
                     if (result != null)
                     {
-                        Console.WriteLine($"Payment ID: {postResult.TransactionID} State: {result.StateID}, Message: {result.StateMessage}, Card Number: {result.CardNumber}");
+                        Console.WriteLine($"Get Existing Payment - SUCCESS - Payment ID: {postResult.TransactionID} State: {result.StateID}, Message: {result.StateMessage}, Card Number: {result.CardNumber}");
                     }
                     else
                     {
-                        Console.WriteLine($"Payment not found for transactionID: {postResult.TransactionID}");
+                        Console.WriteLine($"Get Existing Payment - FAILED - Payment not found for transactionID: {postResult.TransactionID}");
                     }
                 }
 
             }
         }
 
-        private static PostNewTransactionResult PostRandomPayment(MerchantSimulatorSettings simSettings, NewMerchantInfo merchantToUse)
+        private static void SetupMerchants(MerchantSimulatorSettings merchantSimulatorSettings, NewMerchantInfo[] merchants)
+        {
+            Console.WriteLine("Setting up merchants");
+            for (int i = 0; i < merchants.Length; i++)
+            {
+                merchants[i] = GenerateNewMerchant(merchantSimulatorSettings.Gateway);
+            }
+            Console.WriteLine("Setting up merchants - COMPLETE");
+            Console.WriteLine();
+        }
+
+
+        private static PostNewTransactionResult PostRandomPayment(MerchantSimulatorSettings simSettings, NewMerchantInfo merchantToUse, string bearerToken)
         {
             using (HttpClient client = new HttpClient())
             {
@@ -75,11 +81,11 @@ namespace ChkMerchantSimulator
                 client.DefaultRequestHeaders.Accept.Clear();
                 client.DefaultRequestHeaders.Accept.Add(
                     new MediaTypeWithQualityHeaderValue("application/json"));
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
 
                 Merch_NewPaymentRequest paymentRequest = new Merch_NewPaymentRequest()
                 {
                     Amount = 15.23M,
-                    APIKey = merchantToUse.APIKey,
                     CardCVV = 123,
                     CardExpMonth = 11,
                     CardExpYear = 2022,
@@ -91,24 +97,62 @@ namespace ChkMerchantSimulator
 
                 try
                 {
+                    Console.WriteLine("Posting new payment...");
                     HttpResponseMessage response = client.PostAsJsonAsync("payment/PostNewPayment", paymentRequest).Result;
-                    Console.WriteLine("Response status code :" + response.StatusCode);
                     if (response.StatusCode == System.Net.HttpStatusCode.OK)
                     {
                         Merch_NewPaymentResponse respObj = response.Content.ReadAsAsync<Merch_NewPaymentResponse>().Result;
-                        Console.WriteLine($"Payment ID: {respObj.TransactionID} State: {respObj.TransactionState}, Message: {respObj.Message}");
+                        Console.WriteLine($"Post new payment SUCCESS - Payment ID: {respObj.TransactionID} State: {respObj.TransactionState}, Message: {respObj.Message}");
                         return new PostNewTransactionResult() { Success = true, TransactionID = respObj.TransactionID };
                     }
                     else
                     {
-                        Console.WriteLine($"Unsuccessful post, status code was : {response.StatusCode} message was : {response.Content}");
+                        Console.WriteLine($"Post new payment FAILED - Unsuccessful post, status code was : {response.StatusCode} message was : {response.Content}");
                         return new PostNewTransactionResult() { Success = false, TransactionID = Guid.Empty };
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Exception occured during post : {ex.Message}");
+                    Console.WriteLine($"Post new payment FAILED - Exception occured during post : {ex.Message}");
                     return new PostNewTransactionResult() { Success = false, TransactionID = Guid.Empty };
+                }
+            }
+        }
+
+        private static string GetBearerToken(MerchantSimulatorSettings simSettings, NewMerchantInfo merchantInfo)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(simSettings.Gateway);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(
+                    new MediaTypeWithQualityHeaderValue("application/json"));
+
+                Merch_AuthenticationRequest authenticationRequest = new Merch_AuthenticationRequest()
+                {
+                    MerchantAPIKey = merchantInfo.APIKey,
+                    MerchantID = merchantInfo.ID
+                };
+
+                try
+                {
+                    HttpResponseMessage response = client.PostAsJsonAsync("merchant/Authenticate", authenticationRequest).Result;
+                    if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                    {
+                        Merch_AuthenticationResponse respObj = response.Content.ReadAsAsync<Merch_AuthenticationResponse>().Result;
+                        Console.WriteLine($"Authenticated");
+                        return respObj.Token;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Authentication status code was : {response.StatusCode} message was : {response.Content}");
+                        return null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Exception occured during Authentication : {ex.Message}");
+                    return null;
                 }
             }
         }
@@ -130,7 +174,6 @@ namespace ChkMerchantSimulator
                 };
 
                 HttpResponseMessage response = client.PostAsJsonAsync("merchant/PostNewMerchant", newMerch).Result;
-                Console.WriteLine("Response status code :" + response.StatusCode);
                 if (response.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     Merch_NewMerchantResponse respObj = response.Content.ReadAsAsync<Merch_NewMerchantResponse>().Result;
@@ -149,7 +192,7 @@ namespace ChkMerchantSimulator
             }
         }
 
-        private static Merch_GetPaymentResponse GetTransaction(MerchantSimulatorSettings simSettings, Guid transactionID, NewMerchantInfo merchantInfo)
+        private static Merch_GetPaymentResponse GetTransaction(MerchantSimulatorSettings simSettings, Guid transactionID, NewMerchantInfo merchantInfo, string bearerToken)
         {
             using (HttpClient client = new HttpClient())
             {
@@ -157,31 +200,30 @@ namespace ChkMerchantSimulator
                 client.DefaultRequestHeaders.Accept.Clear();
                 client.DefaultRequestHeaders.Accept.Add(
                     new MediaTypeWithQualityHeaderValue("application/json"));
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+
 
                 Merch_GetPaymentRequest getPaymentRequest = new Merch_GetPaymentRequest()
                 {
-                    APIKey = merchantInfo.APIKey,
-                    MerchantID = merchantInfo.ID,
                     PaymentID = transactionID
                 };
 
                 try
                 {
-                    HttpResponseMessage response = client.PostAsJsonAsync("payment/GetExistingPayment/", getPaymentRequest).Result;
-                    Console.WriteLine("Response status code :" + response.StatusCode);
+                    HttpResponseMessage response = client.PostAsJsonAsync("payment/GetExistingPayment", getPaymentRequest).Result;
                     if (response.StatusCode == System.Net.HttpStatusCode.OK)
                     {
                         return response.Content.ReadAsAsync<Merch_GetPaymentResponse>().Result;
                     }
                     else
                     {
-                        Console.WriteLine($"Unsuccessful get transaction id: {transactionID}, status code was : {response.StatusCode} message was : {response.Content}");
+                        Console.WriteLine($"Get Existing Payment FAILED - Unsuccessful get transaction id: {transactionID}, status code was : {response.StatusCode} message was : {response.Content}");
                         return null;
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Exception occured during get for transaction id, ex message : {ex.Message}");
+                    Console.WriteLine($"Get Existing Payment FAILED - Exception occured during get for transaction id, ex message : {ex.Message}");
                     return null;
                 }
             }
