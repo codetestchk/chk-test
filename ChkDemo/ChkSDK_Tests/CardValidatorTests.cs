@@ -1,7 +1,7 @@
 using System;
 using ChkSDK;
 using ChkSDK.DTOs;
-using ChkSDK.Validators;
+using ChkSDK.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ChkSDK_Tests
@@ -9,6 +9,8 @@ namespace ChkSDK_Tests
     [TestClass]
     public class CardValidatorTests
     {
+        ICardValidatorService cardValidator = new CardValidatorService();
+
         [TestMethod]
         public void CardValidation_Pass()
         {
@@ -24,7 +26,7 @@ namespace ChkSDK_Tests
                 MerchantID = Guid.NewGuid()
             };
 
-            Assert.AreEqual(0, CardValidator.ValidateCardInfo(dataIn).Count);
+            Assert.AreEqual(0, cardValidator.ValidateCardInfo(dataIn).Count);
         }
 
         [TestMethod]
@@ -42,7 +44,7 @@ namespace ChkSDK_Tests
                 MerchantID = Guid.NewGuid()
             };
 
-            var result = CardValidator.ValidateCardInfo(dataIn);
+            var result = cardValidator.ValidateCardInfo(dataIn);
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual("Card Number", result[0].FieldName);
         }
@@ -62,13 +64,13 @@ namespace ChkSDK_Tests
                 MerchantID = Guid.NewGuid()
             };
 
-            var result = CardValidator.ValidateCardInfo(dataIn);
+            var result = cardValidator.ValidateCardInfo(dataIn);
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual("Card Number", result[0].FieldName);
         }
 
         [TestMethod]
-        public void CardValidation_Fail_CardNumber_AlphaCar()
+        public void CardValidation_Fail_CardNumber_AlphaChar()
         {
             var dataIn = new Merch_NewPaymentRequest()
             {
@@ -82,7 +84,7 @@ namespace ChkSDK_Tests
                 MerchantID = Guid.NewGuid()
             };
 
-            var result = CardValidator.ValidateCardInfo(dataIn);
+            var result = cardValidator.ValidateCardInfo(dataIn);
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual("Card Number", result[0].FieldName);
         }
@@ -102,7 +104,7 @@ namespace ChkSDK_Tests
                 MerchantID = Guid.NewGuid()
             };
 
-            var result = CardValidator.ValidateCardInfo(dataIn);
+            var result = cardValidator.ValidateCardInfo(dataIn);
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual("Card Number", result[0].FieldName);
         }

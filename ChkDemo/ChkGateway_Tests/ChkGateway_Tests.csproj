@@ -15,6 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ChkSDK\ChkSDK.csproj" />
+    <ProjectReference Include="..\ChkGateway\ChkGateway.csproj" />
   </ItemGroup>
 </Project>

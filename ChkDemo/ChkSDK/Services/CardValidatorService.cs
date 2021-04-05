@@ -1,18 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using ChkSDK.DTOs;
 
-namespace ChkSDK.Validators
+namespace ChkSDK.Services
 {
-    public static class CardValidator
+    public interface ICardValidatorService
+    {
+        List<CardValidationError> ValidateCardInfo(Merch_NewPaymentRequest request);
+    }
+
+    public class CardValidatorService : ICardValidatorService
     {
         /// <summary>
         /// Validates all of the basic things with a card, number, expiry, cvv etc, used to validate before we send to bank
         /// </summary>
         /// <param name="request">All of the card info</param>
         /// <returns>Returns list of validation failures, count = 0 if no errors</returns>
-        public static List<CardValidationError> ValidateCardInfo(Merch_NewPaymentRequest request)
+        public List<CardValidationError> ValidateCardInfo(Merch_NewPaymentRequest request)
         {
             List<CardValidationError> toReturn = new List<CardValidationError>();
 

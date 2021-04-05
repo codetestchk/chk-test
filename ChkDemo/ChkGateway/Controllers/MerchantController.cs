@@ -13,7 +13,7 @@ namespace ChkGateway.Controllers
         private readonly ILogger<MerchantController> _logger;
         private readonly IMerchantService _merchantService;
 
-        public MerchantController(ILogger<MerchantController> logger,IMerchantService merchantService)
+        public MerchantController(ILogger<MerchantController> logger, IMerchantService merchantService)
         {
             // TODO use logger
             _logger = logger;
@@ -40,7 +40,7 @@ namespace ChkGateway.Controllers
 
             if(response == null)
             {
-                return BadRequest(new { message = "authentication failed" });
+                return Unauthorized(new { message = "authentication failed" });
             }
 
             return Ok(response);

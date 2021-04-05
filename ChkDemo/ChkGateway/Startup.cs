@@ -32,10 +32,10 @@ namespace ChkGateway
             services.Configure<JwtSettings>(options => Configuration.GetSection("JwtSettings").Bind(options));
 
             // This is where I inject the fake bank proxy, this line would be altered in real system
+            services.AddSingleton<ICardValidatorService, CardValidatorService>();
             services.AddScoped<IBankServiceProxy, FakeBankServiceProxy>();
             services.AddScoped<IMerchantService, MerchantService>();
             services.AddScoped<ITransactionService, TransactionService>();
-
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChkMerchantSimulator", "Chk
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChkSDK_Tests", "ChkSDK_Tests\ChkSDK_Tests.csproj", "{C9EE60DE-9BE4-4631-A2D1-F34ED45CAD14}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChkGateway_Tests", "ChkGateway_Tests\ChkGateway_Tests.csproj", "{8BE9FD2C-1979-4861-83D1-C78ACAFC8272}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{C9EE60DE-9BE4-4631-A2D1-F34ED45CAD14}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C9EE60DE-9BE4-4631-A2D1-F34ED45CAD14}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C9EE60DE-9BE4-4631-A2D1-F34ED45CAD14}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8BE9FD2C-1979-4861-83D1-C78ACAFC8272}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8BE9FD2C-1979-4861-83D1-C78ACAFC8272}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8BE9FD2C-1979-4861-83D1-C78ACAFC8272}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8BE9FD2C-1979-4861-83D1-C78ACAFC8272}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
