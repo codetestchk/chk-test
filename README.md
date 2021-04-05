@@ -76,7 +76,8 @@ sudo docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YOUR_PASSWORD_HERE" \
    -d mcr.microsoft.com/mssql/server:2019-latest
 ```
 
-You should use whatever password you wish, also note the port binding ( you may already have SQL Express or something running using 1433.
+
+You should use whatever password you wish, but make sure it is complex enough or the docket container will not start, also note the port binding ( you may already have SQL Express or something running using 1433.
 
 ## Limitations/TOOD's
 
