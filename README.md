@@ -77,3 +77,28 @@ sudo docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YOUR_PASSWORD_HERE" \
 ```
 
 You should use whatever password you wish, also note the port binding ( you may already have SQL Express or something running using 1433.
+
+## Limitations/TOOD's
+
+*TODO's - all of which are listed as // TODO within the code*
+1. Card validation is simplified brevity, only validates card number, not any other value, also associated Unit tests
+2. Logger is injected into controllers for use, but logger is not called anywhere, typically application logging would take place probably to disk, and or an appropriate logging NoSql database
+3. Within the PaymentsController there is a concrete dependency upon HttpContext that I would like to extract away
+4. New Merchant - no validation takes place on that
+
+*Architectural TODOs*
+
+1. Small change on binding of `IBankServiceProxy` currently is hard-bound in code to the `FakeBankServiceProxy`, ideally this would be decided upon ( real or fake ) on either a: appsettings.json configuration or b: environment settings
+2. Synchronicity betwen Payment service and payments, currently the PostNewPayment within the PaymentsController holds open a Http session waiting on a response from the bank. Typically I would expect this would be more asynchronous, as in posting a bank request, then checking back on it at a later date ( 5 seconds later or so... ) or posting a callback API endpoint to the Bank Provider for them to post information to the Payments API, rather than holding a http session call open whilst the bank replies.
+3. Performance on database - very little perf work has been done on the database, indexes, query optimization etc
+4. Card information is stored in plain text, this is a no-no, and so data would need to be encrypted at rest
+
+## Architectural considerations/notes
+
+### Scaling
+
+The API can easily be containerized as the only common resource is the database ( which has ACID behaviours given that it is a SqlServer DB ), even the authentication is a scalable - server doesn't store session data ( so long as the secret key is shared ).
+
+
+
+
