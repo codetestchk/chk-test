@@ -71,10 +71,9 @@ The instructions/info is then available within the console/terminal window, hitt
 ### Sql Server Docker Setup
 
 ```bash
-sudo docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=INSERT_LOCAL_PASSWORD_HERE123!" \
-   -p 1433:1433 --name localdocsql -h localdocsql \
-   -d mcr.microsoft.com/mssql/server:2019-latest
+sudo docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=INSERT_LOCAL_PASSWORD_HERE123!" -p 1433:1433 --name localdocsql -h localdocsql -d mcr.microsoft.com/mssql/server:2019-latest
 ```
+(remove sudo on windows)
 
 
 You should use whatever password you wish, but make sure it is complex enough or the docket container will not start, also note the port binding ( you may already have SQL Express or something running using 1433.
@@ -99,7 +98,3 @@ You should use whatever password you wish, but make sure it is complex enough or
 ### Scaling
 
 The API can easily be containerized as the only common resource is the database ( which has ACID behaviours given that it is a SqlServer DB ), even the authentication is a scalable - server doesn't store session data ( so long as the secret key is shared ).
-
-
-
-
