@@ -4,7 +4,6 @@ using ChkGateway.AttributeFilters;
 using ChkSDK.BankProxy;
 using ChkSDK.DTOs;
 using ChkSDK.Services;
-using ChkSDK.Validators;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -19,21 +18,23 @@ namespace ChkGateway.Controllers
         private readonly IBankServiceProxy _bankServiceProxy;
         private readonly IMerchantService _merchantService;
         private readonly ITransactionService _transactionService;
+        private readonly ICardValidatorService _vardValidatorService;
 
-        public PaymentController(ILogger<PaymentController> logger, IBankServiceProxy bankServiceProxy, IMerchantService merchantService, ITransactionService transactionService)
+        public PaymentController(ILogger<PaymentController> logger, IBankServiceProxy bankServiceProxy, IMerchantService merchantService, ITransactionService transactionService, ICardValidatorService cardValidatorService)
         {
             // TODO use logger
             _logger = logger;
             _bankServiceProxy = bankServiceProxy;
             _merchantService = merchantService;
             _transactionService = transactionService;
+            _vardValidatorService = cardValidatorService;
         }
 
         [HttpPost]
         [AuthorizeMerchant]
         public async Task<ActionResult<Merch_NewPaymentResponse>> PostNewPayment(Merch_NewPaymentRequest paymentRequest)
         {
-            var validationErrors = CardValidator.ValidateCardInfo(paymentRequest);
+            var validationErrors = _vardValidatorService.ValidateCardInfo(paymentRequest);
             if(validationErrors.Count >= 1)
             {
                 return BadRequest(validationErrors);
@@ -69,7 +70,7 @@ namespace ChkGateway.Controllers
                 TransactionState = bankProcessResult.TransactionState,
                 TransactionID = guidOfTransaction
             });
-;        }
+        }
 
 
         // Note: I don't particularly want the Payment GUID to be in the URL, so I chose HttpPost's for all communications in this solution,
