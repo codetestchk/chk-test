@@ -71,7 +71,7 @@ The instructions/info is then available within the console/terminal window, hitt
 ### Sql Server Docker Setup
 
 ```bash
-sudo docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YOUR_PASSWORD_HERE" \
+sudo docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=INSERT_LOCAL_PASSWORD_HERE123!" \
    -p 1433:1433 --name localdocsql -h localdocsql \
    -d mcr.microsoft.com/mssql/server:2019-latest
 ```

@@ -75,7 +75,14 @@ namespace ChkMerchantSimulator
 
         private static PostNewTransactionResult PostRandomPayment(MerchantSimulatorSettings simSettings, NewMerchantInfo merchantToUse, string bearerToken)
         {
-            using (HttpClient client = new HttpClient())
+            // Note, this is to bypass SSL signing issues, remove for production server
+            // with correct SSL cert
+            var handler = new HttpClientHandler()
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            };
+
+            using (HttpClient client = new HttpClient(handler))
             {
                 client.BaseAddress = new Uri(simSettings.Gateway);
                 client.DefaultRequestHeaders.Accept.Clear();
@@ -121,7 +128,14 @@ namespace ChkMerchantSimulator
 
         private static string GetBearerToken(MerchantSimulatorSettings simSettings, NewMerchantInfo merchantInfo)
         {
-            using (HttpClient client = new HttpClient())
+            // Note, this is to bypass SSL signing issues, remove for production server
+            // with correct SSL cert
+            var handler = new HttpClientHandler()
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            };
+
+            using (HttpClient client = new HttpClient(handler))
             {
                 client.BaseAddress = new Uri(simSettings.Gateway);
                 client.DefaultRequestHeaders.Accept.Clear();
@@ -159,7 +173,14 @@ namespace ChkMerchantSimulator
 
         private static NewMerchantInfo GenerateNewMerchant(string gatewayApiEndpoint)
         {
-            using (HttpClient client = new HttpClient())
+            // Note, this is to bypass SSL signing issues, remove for production server
+            // with correct SSL cert
+            var handler = new HttpClientHandler()
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            };
+
+            using (HttpClient client = new HttpClient(handler))
             {
                 client.BaseAddress = new Uri(gatewayApiEndpoint);
                 client.DefaultRequestHeaders.Accept.Clear();
@@ -194,7 +215,14 @@ namespace ChkMerchantSimulator
 
         private static Merch_GetPaymentResponse GetTransaction(MerchantSimulatorSettings simSettings, Guid transactionID, NewMerchantInfo merchantInfo, string bearerToken)
         {
-            using (HttpClient client = new HttpClient())
+            // Note, this is to bypass SSL signing issues, remove for production server
+            // with correct SSL cert
+            var handler = new HttpClientHandler()
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            };
+
+            using (HttpClient client = new HttpClient(handler))
             {
                 client.BaseAddress = new Uri(simSettings.Gateway);
                 client.DefaultRequestHeaders.Accept.Clear();
