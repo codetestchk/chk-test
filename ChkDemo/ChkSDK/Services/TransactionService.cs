@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using ChkDatabase;
 using ChkDatabase.Entites;
@@ -13,7 +12,7 @@ namespace ChkSDK.Services
     {
         Task UpdateTransactionStatus(Guid id, TransactionStateEnum transactionState, string message, Guid bankTransactionID);
         Task<Guid> CreateNewTransaction(Merch_NewPaymentRequest newTransaction);
-        Task<Merch_GetPaymentResponse> GetTransaction(Guid transactionID, Guid merchantID, String apiKey);
+        Task<Merch_GetPaymentResponse> GetTransaction(Guid transactionID, Guid merchantID);
     }
 
     public class TransactionService : ITransactionService
@@ -26,7 +25,7 @@ namespace ChkSDK.Services
         }
 
         /// <summary>
-        /// Creates a new transaction into DB, generates ID
+        /// Creates a new transaction into DB, generates ID, begins with state 'processing'
         /// </summary>
         /// <param name="newTransaction"></param>
         /// <returns>Returns transaction ID within Chkout payments, for future reference by the merchant</returns>
@@ -63,15 +62,14 @@ namespace ChkSDK.Services
         }
 
         /// <summary>
-        /// Get existing trasnaction, also validates access to that transaction record by way of merchant ID and API Key
+        /// Get existing trasnaction
         /// </summary>
         /// <param name="transactionID">The transaction guid that we want info on</param>
-        /// <param name="merchantID">Needed to validate API key against a merchant to see if merchant has access to this transaction</param>
-        /// <param name="apiKey">This is used to validate that this merchant has access to this transaction</param>
-        /// <returns>Will return NULL if not found, OR merchant ID + API Key does not have access to this transaction</returns>
-        public async Task<Merch_GetPaymentResponse> GetTransaction(Guid transactionID, Guid merchantID, String apiKey)
+        /// <param name="merchantID">Only get transactions for this merchant provided key</param>
+        /// <returns>Will return NULL if not found, OR merchant ID does not have access to this transaction</returns>
+        public async Task<Merch_GetPaymentResponse> GetTransaction(Guid transactionID, Guid merchantID)
         {
-            var record = await _dbContext.Transactions.SingleOrDefaultAsync(a => a.ID == transactionID && a.Merchant.ID == merchantID && a.Merchant.APIKey == apiKey);
+            var record = await _dbContext.Transactions.SingleOrDefaultAsync(a => a.ID == transactionID && a.Merchant.ID == merchantID);
             if(record != null)
             {
                 return new Merch_GetPaymentResponse()

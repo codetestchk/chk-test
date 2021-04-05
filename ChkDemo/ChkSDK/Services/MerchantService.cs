@@ -4,7 +4,10 @@ using System.Threading.Tasks;
 using ChkDatabase;
 using ChkDatabase.Entites;
 using ChkSDK.DTOs;
+using ChkSDK.Helpers;
+using ChkSDK.SettingsModel;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace ChkSDK.Services
 {
@@ -13,15 +16,19 @@ namespace ChkSDK.Services
         Task<bool> ValidateIDApiKey(Guid merchantID, string merchantAPIKey);
         Task<MerchantBankInfo> GetMerchantPaymentDetails(Guid merchantID);
         Task<NewMerchantInfo> CreateNewMerchant(string bankAcc, string bankSort, string merchName);
+        Task<Merch_AuthenticationResponse> Authenticate(Merch_AuthenticationRequest authRequest);
+        Task<bool> MerchantIDExists(Guid merchantID);
     }
 
     public class MerchantService : IMerchantService
     {
         private readonly ChkDbContext _dbContext;
+        private readonly JwtSettings _jwtSettings;
 
-        public MerchantService(ChkDbContext chkDbContext)
+        public MerchantService(ChkDbContext chkDbContext, IOptions<JwtSettings> jwtSettings)
         {
             _dbContext = chkDbContext;
+            _jwtSettings = jwtSettings.Value;
         }
 
         /// <summary>
@@ -53,6 +60,7 @@ namespace ChkSDK.Services
         /// <returns>APIKey and ID</returns>
         public async Task<NewMerchantInfo> CreateNewMerchant(string bankAcc, string bankSort, string merchName)
         {
+            // Generation of api key is akin to a password. Client is expected to store this securely like a password.
             string apiKey = GenerateRandomAPIKey();
             Guid merchantID = Guid.NewGuid();
 
@@ -77,9 +85,38 @@ namespace ChkSDK.Services
         private string GenerateRandomAPIKey()
         {
             Random random = new Random();
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             return new string(Enumerable.Repeat(chars, 20)
               .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
+        /// <summary>
+        /// Generates JwtToken if ID and APIKey match that in database
+        /// </summary>
+        /// <param name="authRequest">ID and API Key</param>
+        /// <returns>Returns null if authenticaiton fails</returns>
+        public async Task<Merch_AuthenticationResponse> Authenticate(Merch_AuthenticationRequest authRequest)
+        {
+            var merch = await _dbContext.Merchants.SingleOrDefaultAsync(a => a.ID == authRequest.MerchantID && a.APIKey == authRequest.MerchantAPIKey);
+
+            if(merch == null)
+            {
+                return null;
+            }
+
+            var authToken = AuthHelper.GenerateJWTToken(merch.ID, merch.Name, _jwtSettings.SecretKey, _jwtSettings.ExpiryHours);
+
+            return new Merch_AuthenticationResponse()
+            {
+                MerchantID = merch.ID,
+                MerchantNmae = merch.Name,
+                Token = authToken
+            };
+        }
+
+        public async Task<bool> MerchantIDExists(Guid merchantID)
+        {
+            return await _dbContext.Merchants.AnyAsync(a => a.ID == merchantID);
         }
     }
 }

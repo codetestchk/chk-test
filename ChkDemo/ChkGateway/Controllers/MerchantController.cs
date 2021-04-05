@@ -32,5 +32,18 @@ namespace ChkGateway.Controllers
                 ID = newMerchInfo.ID
             }); 
         }
+
+        [HttpPost]
+        public async Task<ActionResult<Merch_AuthenticationResponse>> Authenticate(Merch_AuthenticationRequest authRequest)
+        {
+            var response = await _merchantService.Authenticate(authRequest);
+
+            if(response == null)
+            {
+                return BadRequest(new { message = "authentication failed" });
+            }
+
+            return Ok(response);
+        }
     }
 }

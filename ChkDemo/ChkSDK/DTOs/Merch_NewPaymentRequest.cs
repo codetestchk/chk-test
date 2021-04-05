@@ -11,6 +11,5 @@ namespace ChkSDK.DTOs
         public decimal Amount { get; set; }
         public int CurrencyID { get; set; }
         public int CardCVV { get; set; }
-        public string APIKey { get; set; }
     }
 }
